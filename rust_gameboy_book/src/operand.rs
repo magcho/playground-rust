@@ -125,7 +125,7 @@ impl IO16<Reg16> for Cpu {
             Reg16::SP => self.regs.sp,
         })
     }
-    fn write8(&mut self, _: &Peripherals, dst: Reg8, val: u8) -> Option<()> {
+    fn write16(&mut self, _: &Peripherals, dst: Reg8, val: u8) -> Option<()> {
         Some(match dst {
             Reg16::AF => self.regs.write_af(val),
             Reg16::BC => self.regs.write_bc(val),
@@ -133,5 +133,31 @@ impl IO16<Reg16> for Cpu {
             Reg16::HL => self.regs.write_hl(val),
             Reg16::SP => self.regs.sp = val,
         })
+    }
+}
+
+impl IO16<Imm16> for Cpu {
+    fn read16(&mut self, _: &Peripherals, src: Reg16) -> Option<u16> {
+        step!(None,{
+            0:{
+                if let Some(lo) = self.read8(bus, Imm8){
+                    VAL8.store(lo, Relaxed);
+                    go!(1);
+                }
+            },
+            1:{
+                if let Some(hi) = self.read8(bus, Imm8){
+                    VAL16.store(u16::from_le_bytes([VAL8.load(Relaxed), hi]), Relaxed);
+                    go!(2);
+                }
+            },
+            2:{
+                go!(0);
+                return Some(VAL16).load(Relaxed);
+            }
+        })
+    }
+    fn write16(&mut self, _: &Peripherals, dst: Reg16, val: u16) -> Option<()> {
+        unreachable!();
     }
 }
