@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicU16, AtomicU8, Ordering::Relaxed};
+
 // 8bitレジスタ
 #[derive(Clone, Copy, Debug)]
 pub enum Reg8 {
@@ -90,6 +92,29 @@ impl IO8<Reg8> for Cpu {
             Reg8::H => self.regs.h = val,
             Reg8::L => self.regs.l = val,
         })
+    }
+}
+impl IO8<Imm8> for Cpu {
+    fn read8(&mut self, bus: &Peripherals, _: Imm8) -> Option<u8> {
+        static STEP: AtomicU8 = AtomicU8::new(0);
+        static VAL8: AtomicU8 = AtomicU8::new(0);
+
+        match STEP.load(Relaxed) {
+            0 => {
+                VAL8.store(bus.read(self.regs.pc), Relaxed);
+                self.regs.pc = self.regs.pc.wrapping_add(1);
+                STEP.fetch_add(1, Relaxed);
+                None
+            }
+            1 => {
+                STEP.store(0, Relaxed);
+                Some(VAL8.load(Relaxed))
+            }
+        }
+    }
+
+    fn write8(&mut self, _: Imm8, _: u8) {
+        unreachable!();
     }
 }
 
