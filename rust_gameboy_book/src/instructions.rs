@@ -299,6 +299,19 @@ impl Cpu {
             }
         })
     }
+
+    pub fn ret(&mut self, bus: &mut Peripherals) {
+        step!((),{
+            0: if let Some(v) = self.read16(bus){
+                self.regs.pc = v;
+                return go!(1);
+            },
+            1: {
+                go!(0);
+                self.fetch(bus);
+            }
+        })
+    }
 }
 
 macro_rules! step {
