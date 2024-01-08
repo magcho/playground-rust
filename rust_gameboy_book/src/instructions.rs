@@ -261,6 +261,30 @@ impl Cpu {
             }
         })
     }
+
+    fn cond(&self, cond: Cond) -> bool {
+        match cond {
+            Cond::NZ => !self.regs.zf(),
+            Cond::Z => self.regs.zf(),
+            Cond::NC => !self.regs.cf(),
+            Cond::C => self.regs.cf(),
+        }
+    }
+    pub fn jr_c(&mut self, bus: &Peripherals, c: Cond) {
+        step!((),{
+            0: if let Some(v) = self.read8(bus, Imm8){
+                go!(1);
+                if self.cond(c){
+                    self.regs.pc = self.regs.pc.wrapping_add(v as i8 as u16);
+                    return;
+                }
+            },
+            1: {
+                go!(0);
+                self.fetch(bus);
+            }
+        })
+    }
 }
 
 macro_rules! step {
