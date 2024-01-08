@@ -1,7 +1,7 @@
 #[derive(Default)]
 struct Ctx {
     opcode: u8,
-    cd: bool,
+    cb: bool,
 }
 
 pub struct Cpu {
