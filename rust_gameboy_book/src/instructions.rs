@@ -248,6 +248,19 @@ impl Cpu {
             self.fetch(bus);
         }
     }
+
+    pub fn jr(&mut self, bus: &Peripherals) {
+        step!((),{
+            0: if let Some(v) = self.read8(bus, Imm8){
+                self.regs.pc = self.regs.pc.wrapping_add(v as i8 as u16); // 即値を符号付き整数とみなしてPC レジスタに足す
+                return go!(1);
+            },
+            1:{
+                go!(0);
+                self.fetch(bus);
+            }
+        })
+    }
 }
 
 macro_rules! step {
