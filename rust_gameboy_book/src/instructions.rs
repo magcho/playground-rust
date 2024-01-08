@@ -138,6 +138,29 @@ impl Cpu {
             }
         })
     }
+
+    pub fn rl<S: Copy>(&mut self, bus: &mut Peripherals, src: S)
+    where
+        Self: IO8<S>,
+    {
+        step!((),{
+            0: if let Some(v)= self.read8(bus,src){
+                let result = (v << 1) | self.regs.cf() as u8;
+
+                self.regs.set_zf(result == 0);
+                self.regs.set_nf(false);
+                self.regs.set_hf(false);
+                self.regs.set_cf(v & 0x80 > 0);
+
+                VAL8.store(result, Relaxed);
+                go!(1);
+            },
+            1: if self.write8(bus, src, VAL8.load(Relaxed)).is_some(){
+                go!(0);
+                self.fetch(bus);
+            }
+        })
+    }
 }
 
 macro_rules! step {
