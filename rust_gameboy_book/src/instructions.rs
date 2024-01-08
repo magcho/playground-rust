@@ -74,19 +74,63 @@ impl Cpu {
             1: if self.write8(bus,src,VAL8.load(Relaxed)).is_some(){
                 go!(0);
                 self.fetch(bus);
-            }            
+            }
         })
     }
 
     pub fn inc16<S: Copy>(&mut self, bus: &Peripherals, src: S)
-    where Self: IO16<s>{
+    where
+        Self: IO16<s>,
+    {
         step!((),{
             0: if let Some(v) = self.read16(bus, src){
                 VAL16.store(v.wrapping_add(1), Relaxed);
                 go!(1);
             },
             1: if self.write16(bus, src, VAL16.load(Relaxed)).is_some(){
-                go!(2);            
+                go!(2);
+            },
+            2: {
+                go!(0);
+                self.fetch(bus);
+            }
+        })
+    }
+
+    pub fn dec<S: Copy>(&mut self, bus: &mut Peripherals, src: S)
+    where
+        Self: IO8<S>,
+    {
+        step!((),{
+            0: if let Some(v) = self.read8(bus, src){
+                let result = v.wrapping_sub(1);
+
+                self.regs.set_zf(result == 0);
+                self.regs.set_nf(true);
+                self.regs.set_hf(v & 0xf == 0);
+
+                VAL8.store(result, Relaxed);
+                go!(1);
+            },
+            1: if self.write8(bus,src,VAL8.load(Relaxed)).is_some(){
+                go!(0);
+                self.fetch(bus);
+            }
+
+        })
+    }
+
+    pub fn dec16<S: Copy>(&mut self, bus: &Peripherals, src: S)
+    where
+        Self: IO16<s>,
+    {
+        step!((),{
+            0: if let Some(v) = self.read16(bus, src){
+                VAL16.store(v.wrapping_sub(1), Relaxed);
+                go!(1);
+            },
+            1: if self.write16(bus, src, VAL16.load(Relaxed)).is_some(){
+                go!(2);
             },
             2: {
                 go!(0);
