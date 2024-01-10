@@ -33,7 +33,7 @@ pub struct Imm16;
 //16bitレジスタ, または2つの8bitレジスタからなる16bitが指す場所から読み取られる8bit
 #[derive(Clone, Copy, Debug)]
 pub enum Indirect {
-    BD,
+    BC,
     DE,
     HL,
     CFF,
