@@ -133,6 +133,26 @@ impl Ppu {
     }
 
     fn render_bg(&mut self) {
-        if self.lcdc & BG_WINDOW_ENABLE == 0 {}
+        if self.lcdc & BG_WINDOW_ENABLE == 0 {
+            return;
+        }
+
+        let y = self.y.wrapping_add(self.scy);
+        for i in 0..LCD_WIDTH {
+            let x = (i as u8).wrapping_add(self.scx);
+
+            let title_idx =
+                self.get_tile_idx_from_tile_map(self.lcdc & BG_TILE_MAP > 0, y >> 3, x >> 3);
+
+            let pixcel = self.get_pixcel_from_tile(title_idx, y & 7, x & 7);
+
+            self.buffer[LCD_WIDTH * self.ly as usize + i] = match (self.bgp >> (pixcel << 1)) & 0b11
+            {
+                b000 => 0xFF, // 白
+                0b01 => 0xAA, // ライトグレー
+                0b10 => 0xAA, // ダークグレー
+                _ => 0x00,    // 黒
+            };
+        }
     }
 }
