@@ -218,4 +218,11 @@ impl Ppu {
             }
         }
     }
+
+    pub fn pixcel_buffer(&self) -> Box<[u8]> {
+        self.buffer
+            .iter()
+            .flat_map(|&e| iter::repeat(e.into()).take(3))
+            .collect::<Box<[u8]>>()
+    }
 }
