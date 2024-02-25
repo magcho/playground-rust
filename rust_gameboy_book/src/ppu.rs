@@ -163,4 +163,59 @@ impl Ppu {
             self.stat &= !LYC_EQ_LY;
         }
     }
+
+    pub fn emulate_cycle(&mut self) -> bool {
+        if self.lcdc & PPU_ENABLE == 0
+        // PPUが無効化されている場合は何もしない
+        {
+            return false;
+        }
+
+        self.cycles -= 1; // cycleの値を更新する
+        if self.cycles > 0 {
+            // 最終cycle出ない場合は何もしない
+            return false;
+        }
+
+        let mut ret = false; // VSYNCであるかを示す変数
+        match self.mode {
+            Mode::HBlank => {
+                self.ly += 1; // HBLANKの終わりは行の終わり何のでLYをインクリメント
+                if self.ly < 144 {
+                    self.mode = Mode::OamScan; // 描画する行が残っている場合は次のモードはOAM Scan
+                    self.cycles = 20;
+                } else {
+                    // その行がVBlankの手前の行だった場合は次のモードはVBLank
+                    self.mode = Mode::VBlank;
+                    self.cycles = 114;
+                }
+                self.check_lyc_eq_ly(); // LYを更新したら必ずLYCと等しいかを確認する
+            }
+            Mode::VBlank => {
+                self.ly += 1; // VBlankの終わりは行の終わりなのでLYをインクリメント
+                if self.ly > 153 {
+                    // VBlankの最後の行だった場合は次のモードはOAM Scan
+                    ret = true; // VBlankの最後はVSYNCのタイミング
+                    self.ly = 0; // 先頭の行に戻る
+                    self.mode = Mode::OamScan;
+                    self.cycles = 20;
+                } else {
+                    // VBlankの最後の行ではなかった場合はまだVBlank
+                    self.cycles = 114;
+                }
+                self.check_lyc_eq_ly() // LYを更新したら必ずLYCと等しいかを確認する
+            }
+            Mode::OamScan => {
+                // 次のモードはDrawing Pixels
+                self.mode = Mode::Drawing;
+                self.cycles = 43;
+            }
+            Mode::Drawing => {
+                // 次のモードはHBlank
+                self.render_bg(); // Drawing Pixelsの最終cycleなのでレンダリングを実行
+                self.mode = Mode::HBlank;
+                self.cycles = 51;
+            }
+        }
+    }
 }
