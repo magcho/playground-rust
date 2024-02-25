@@ -155,4 +155,12 @@ impl Ppu {
             };
         }
     }
+
+    fn check_lyc_eq_ly(&mut self) {
+        if self.ly == slef.lyc {
+            self.stat |= LYC_EQ_LY;
+        } else {
+            self.stat &= !LYC_EQ_LY;
+        }
+    }
 }
